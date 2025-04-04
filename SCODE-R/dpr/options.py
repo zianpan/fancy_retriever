@@ -122,6 +122,8 @@ def set_encoder_params_from_state(state, args):
         if hasattr(args, param):
             logger.warning('Overriding args parameter value from checkpoint state. Param = %s, value = %s', param,
                            value)
+            if value == "/home/rizwan/graphcodebert-base/":
+                value = "microsoft/codebert-base"
         setattr(args, param, value)
     return args
 
@@ -152,17 +154,17 @@ def setup_args_gpu(args):
 
     args.distributed_world_size = int(ws) if ws else 1
 
-    logger.info(
-        'Initialized host %s as d.rank %d on device=%s, n_gpu=%d, world size=%d', socket.gethostname(),
-        args.local_rank, device,
-        args.n_gpu,
-        args.distributed_world_size)
-    logger.info("16-bits training: %s ", args.fp16)
+    # logger.info(
+    #     'Initialized host %s as d.rank %d on device=%s, n_gpu=%d, world size=%d', socket.gethostname(),
+    #     args.local_rank, device,
+    #     args.n_gpu,
+    #     args.distributed_world_size)
+    # logger.info("16-bits training: %s ", args.fp16)
 
 
 def print_args(args):
-    logger.info(" **************** CONFIGURATION **************** ")
+    # logger.info(" **************** CONFIGURATION **************** ")
     for key, val in sorted(vars(args).items()):
         keystr = "{}".format(key) + (" " * (30 - len(key)))
-        logger.info("%s -->   %s", keystr, val)
-    logger.info(" **************** CONFIGURATION **************** ")
+        # logger.info("%s -->   %s", keystr, val)
+    # logger.info(" **************** CONFIGURATION **************** ")

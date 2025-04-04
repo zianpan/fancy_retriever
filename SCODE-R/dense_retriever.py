@@ -33,6 +33,7 @@ from dpr.options import add_encoder_params, setup_args_gpu, print_args, set_enco
 from dpr.utils.data_utils import Tensorizer
 from dpr.utils.model_utils import setup_for_distributed_mode, get_model_obj, load_states_from_checkpoint
 from dpr.indexer.faiss_indexers import DenseIndexer, DenseHNSWFlatIndexer, DenseFlatIndexer
+from tqdm import tqdm, trange
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -60,7 +61,7 @@ class DenseRetriever(object):
         self.question_encoder.eval()
 
         with torch.no_grad():
-            for j, batch_start in enumerate(range(0, n, bsz)):
+            for j, batch_start in enumerate(trange(0, n, bsz)):
 
                 batch_token_tensors = [self.tensorizer.text_to_tensor(q) for q in
                                        questions[batch_start:batch_start + bsz]]
@@ -210,20 +211,27 @@ def parse_qa_csv_file(location, dataset=None, CSNET_ADV=False, concode_with_code
             for line in f.readlines():
                 line = json.loads(line)
                 label = str("1")
-                source_str = "docstring_tokens"
-                target_str = "function_tokens"
-
-                try:
-                    yield ' '.join(line[source_str]), ' '.join(line[target_str])
-                except:
-                    if "function" in source_str:
-                        source_str = "code_tokens"
-                    else:
-                        target_str = "code_tokens"
-                    try:
-                        yield ' '.join(line[source_str]), ' '.join(line[target_str])
-                    except:
-                        logger.info("could  not parse: %s ", line)
+                # source_str = "docstring_tokens"
+                # target_str = "function_tokens"
+                source_str = "func_documentation_string"
+                target_str = "func_code_string"
+                # print("question: ", line[source_str])
+                # print("ans: ", line[target_str])
+           
+                yield line[source_str], line[target_str]
+                # yield ' '.join(line[source_str]), ' '.join(line[target_str])
+       
+                # try:
+                #     yield ' '.join(line[source_str]), ' '.join(line[target_str])
+                # except:
+                #     if "function" in source_str:
+                #         source_str = "code_tokens"
+                #     else:
+                #         target_str = "code_tokens"
+                #     try:
+                #         yield ' '.join(line[source_str]), ' '.join(line[target_str])
+                #     except:
+                #         logger.info("could  not parse: %s ", line)
     elif not dataset:
         with open(location) as reader:
             for row in reader:
@@ -245,7 +253,7 @@ def validate(passages: Dict[object, Tuple[str, str]], answers: List[List[str]],
 def load_passages(ctx_files: str, CSNET_ADV=False, dataset = None) -> Dict[object, Tuple[str, str]]:
     docs = {}
     logger.info('Reading data from: %s', ctx_files)
-    for ctx_file in glob.glob(ctx_files):
+    for ctx_file in tqdm(glob.glob(ctx_files)):
         if CSNET_ADV:
             with open(ctx_file) as tsvfile:
                 for line in tsvfile:
@@ -356,6 +364,8 @@ def iterate_encoded_files(vector_files: list) -> Iterator[Tuple[object, np.array
 
 
 def main(args):
+    # import logging
+    logging.disable(logging.CRITICAL)
     saved_state = load_states_from_checkpoint(args.model_file)
     set_encoder_params_from_state(saved_state.encoder_params, args)
 

@@ -28,7 +28,7 @@ setup(
     ],
     install_requires=[
         'cython',
-        'faiss-cpu>=1.6.1',
+        # 'faiss-cpu>=1.6.1',
         'filelock',
         'numpy',
         'regex',

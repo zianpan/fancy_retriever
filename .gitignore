@@ -1,1 +1,11 @@
 .DS_Store
+ckpts/
+database/
+SCODE-R/dpr.egg-info/
+SCODE-R/dpr/__pycache__/
+SCODE-R/dpr/data/__pycache__/
+SCODE-R/dpr/indexer/__pycache__/
+SCODE-R/dpr/models/__pycache__/
+SCODE-R/dpr/utils/__pycache__/
+output_ret.zip
+output_ret/

@@ -29,7 +29,7 @@ from dpr.options import add_encoder_params, setup_args_gpu, print_args, set_enco
 from dpr.utils.data_utils import Tensorizer
 from dpr.utils.model_utils import setup_for_distributed_mode, get_model_obj, load_states_from_checkpoint,move_to_device
 import json
-
+from tqdm import tqdm, trange
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -41,10 +41,11 @@ logger.addHandler(console)
 def gen_ctx_vectors(ctx_rows: List[Tuple[object, str, str]], model: nn.Module, tensorizer: Tensorizer,
                     insert_title: bool = True) -> List[Tuple[object, np.array]]:
     n = len(ctx_rows)
+    print(f"total row:{n}")
     bsz = args.batch_size
     total = 0
     results = []
-    for j, batch_start in enumerate(range(0, n, bsz)):
+    for j, batch_start in enumerate(trange(0, n, bsz)):
 
         batch_token_tensors = [tensorizer.text_to_tensor(ctx[1], title=ctx[2] if insert_title else None) for ctx in
                                ctx_rows[batch_start:batch_start + bsz]]
@@ -225,6 +226,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     assert args.model_file, 'Please specify --model_file checkpoint to init model weights'
+    print('--------------------------')
+    print(args.pretrained_model_cfg)
+    print('--------------------------')
 
     setup_args_gpu(args)
 
