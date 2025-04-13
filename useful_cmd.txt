@@ -1,0 +1,43 @@
+
+#找到 ebs名字 格式化
+lsblk #-> ebs名字  nvme1n1
+sudo fdisk -l /dev/nvme2n1 
+sudo mkfs -t ext4 /dev/nvme2n1
+sudo mkdir -p /mnt/new_volume
+
+df -h
+# identify the disk name
+# change authority
+sudo chmod -R 777 /mnt/new_volume
+sudo mount /dev/nvme2n1 /mnt/new_volume
+
+# persist mount
+# 1. Get the UUID of the volume: 
+sudo blkid /dev/nvme0n1
+# output: /dev/nvme1n1: UUID="1234abcd-56ef-78gh-90ij-1234567890kl" TYPE="ext4"
+
+# sudo vim /etc/fstab
+# add the following line to the end of the file
+
+# UUID=1234abcd-56ef-78gh-90ij-1234567890kl /mnt/new_volume ext4 defaults,nofail 0 2
+
+
+
+# sudo apt-get install swig
+conda install -c pytorch faiss-cpu
+pip install faiss-cpu==1.6.5
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+
+bash Miniconda3-latest-Linux-x86_64.sh
+scp -i /Users/panzian/Desktop/11711-anlp/hw/hw2/key/anlp.pem -r ckpts database ubuntu@ec2-75-101-249-245.compute-1.amazonaws.com:/opt/dlami/nvme/pretrained
+
+
+scp -i /Users/panzian/Desktop/11711-anlp/hw/hw2/key/anlp.pem -r /Users/panzian/Desktop/leetcode-notes/graphcodebert-base ubuntu@ec2-75-101-249-245.compute-1.amazonaws.com:/mnt/new_volume
+
+
+scp -i /Users/panzian/Desktop/11711-anlp/hw/hw2/key/anlp.pem -r  /Users/panzian/Desktop/11711-anlp/final_project/fancy_retriever/ckpts /Users/panzian/Desktop/11711-anlp/final_project/fancy_retriever/database ubuntu@ec2-34-239-167-32.compute-1.amazonaws.com:/mnt/new_volume
+
+pip cache purge
+                         
+
+                /Users/panzian/Desktop/leetcode-notes/graphcodebert-base
