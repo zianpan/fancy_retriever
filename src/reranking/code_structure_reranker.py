@@ -2,42 +2,27 @@ from typing import Dict, List, Any
 from reranking.reranker import Reranker
 
 class CodeStructureReranker(Reranker):
-    """
-    Reranker that prioritizes code with similar structure to the expected answer.
-    """
+    """Reranker that prioritizes code with similar structure to the expected answer."""
+    
     def __init__(self, weight: float = 1.0):
-        """
-        Initialize the code structure reranker.
-        
-        Args:
-            weight: Weight to apply to the structure score
-        """
+        """Initialize with given weight."""
         super().__init__()
         self.weight = weight
     
     def compute_structure_similarity(self, ctx_components: Dict[str, Any], 
                                     answer_components: Dict[str, Any]) -> float:
-        """
-        Compute the structural similarity between context and answer.
-        
-        Args:
-            ctx_components: Components extracted from context
-            answer_components: Components extracted from answer
-            
-        Returns:
-            Similarity score between 0 and 1
-        """
+        """Compute structural similarity between context and answer components."""
         score = 0.0
         total_weight = 0.0
         
         # Compare control flow structures
         control_flow_features = [
             'if_count', 'else_count', 'for_count', 'while_count', 
-            'try_count', 'except_count', 'function_calls'
+            'try_count', 'except_count'
         ]
         
         for feature in control_flow_features:
-            weight = 0.5  # Weight for control flow features
+            weight = 0.5
             total_weight += weight
             
             ctx_value = ctx_components.get(feature, 0)
@@ -52,7 +37,22 @@ class CodeStructureReranker(Reranker):
             
             score += weight * similarity
         
-        # Compare imports (important for functionality)
+        # Handle function calls separately
+        if 'function_calls' in ctx_components and 'function_calls' in answer_components:
+            weight = 0.5
+            total_weight += weight
+            
+            ctx_calls = set(ctx_components['function_calls']) if isinstance(ctx_components['function_calls'], list) else set()
+            answer_calls = set(answer_components['function_calls']) if isinstance(answer_components['function_calls'], list) else set()
+            
+            if answer_calls:
+                call_similarity = len(ctx_calls.intersection(answer_calls)) / len(answer_calls)
+                score += weight * call_similarity
+            elif not ctx_calls:
+                # Both empty is a match
+                score += weight
+        
+        # Compare imports
         ctx_imports = set(ctx_components.get('imports', []) + ctx_components.get('from_imports', []))
         answer_imports = set(answer_components.get('imports', []) + answer_components.get('from_imports', []))
         
@@ -62,7 +62,7 @@ class CodeStructureReranker(Reranker):
             import_similarity = len(ctx_imports.intersection(answer_imports)) / len(answer_imports)
             score += import_weight * import_similarity
         
-        # Code length can be indicative of complexity match
+        # Compare code length
         if 'line_count' in ctx_components and 'line_count' in answer_components:
             length_weight = 0.3
             total_weight += length_weight
@@ -79,18 +79,7 @@ class CodeStructureReranker(Reranker):
     
     def rerank(self, query: str, contexts: List[Dict[str, Any]], query_intent: Dict[str, Any],
                answer_components: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """
-        Rerank the contexts based on code structure similarity.
-        
-        Args:
-            query: Query string
-            contexts: List of context dictionaries
-            query_intent: Extracted intent from the query
-            answer_components: Expected answer components
-            
-        Returns:
-            Reranked list of contexts
-        """
+        """Rerank contexts based on code structure similarity."""
         try:
             for ctx in contexts:
                 structure_score = self.compute_structure_similarity(ctx['components'], answer_components)
