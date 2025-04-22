@@ -1,14 +1,14 @@
 from typing import Dict, List, Any
-from reranking.reranker import Reranker
+# Removed import from reranking.reranker
 import re
 
-class SignatureReranker(Reranker):
+class SignatureReranker:
     """
     Reranker that prioritizes code with matching function signatures.
     """
     def __init__(self, weight: float = 1.5):
         """Initialize the signature reranker."""
-        super().__init__()
+        # No longer calls super().__init__()
         self.weight = weight
     
     def compute_signature_similarity(self, ctx_components: Dict[str, Any], 

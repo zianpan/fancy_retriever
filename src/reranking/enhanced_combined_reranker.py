@@ -1,32 +1,35 @@
 from typing import Dict, List, Any, Optional
-from reranking.reranker import Reranker
 from reranking.code_structure_reranker import CodeStructureReranker
 from reranking.signature_reranker import SignatureReranker
 from reranking.semantic_reranker import SemanticReranker
+from reranking.execution_results_reranker import ExecutionResultsReranker
 from function_relationship_analyzer import FunctionRelationshipAnalyzer
 from ast_component_extractor import ASTComponentExtractor
 from query_intent_extractor import QueryIntentExtractor
 
-class EnhancedCombinedReranker(Reranker):
+class EnhancedCombinedReranker:
     """
     Enhanced reranker that combines multiple reranking strategies with dynamic weighting.
+    No longer inherits from base Reranker.
     """
-    def __init__(self, rerankers: Optional[List[Reranker]] = None, weights: Optional[Dict[str, float]] = None):
+    def __init__(self, rerankers: Optional[List[Any]] = None, weights: Optional[Dict[str, float]] = None):
         """Initialize the enhanced combined reranker."""
-        super().__init__()
+        # No longer calls super().__init__()
         
-        # Default weights
+        # Kept only the base weights as specified
         self.base_weights = {
             'CodeStructureReranker': 1.2,
             'SignatureReranker': 1.8,
-            'SemanticReranker': 1.6
+            'SemanticReranker': 1.6,
+            'ExecutionResultsReranker': 5.0
         }
         
         # Initialize rerankers
         self.rerankers = rerankers or [
             CodeStructureReranker(weight=self.base_weights['CodeStructureReranker']),
             SignatureReranker(weight=self.base_weights['SignatureReranker']),
-            SemanticReranker(weight=self.base_weights['SemanticReranker'])
+            SemanticReranker(weight=self.base_weights['SemanticReranker']),
+            ExecutionResultsReranker(weight=self.base_weights['ExecutionResultsReranker'])
         ]
         
         # Apply custom weights if provided
@@ -55,6 +58,16 @@ class EnhancedCombinedReranker(Reranker):
             if query_intent is None:
                 query_intent = self.intent_extractor.extract_intent(query)
             
+            # Ensure query_intent is a dictionary
+            if not isinstance(query_intent, dict):
+                print(f"Warning: query_intent is not a dictionary: {type(query_intent)}")
+                query_intent = {}
+            
+            # Ensure potential_names is a list
+            if 'potential_names' in query_intent and not isinstance(query_intent['potential_names'], list):
+                print(f"Warning: potential_names is not a list: {type(query_intent['potential_names'])}")
+                query_intent['potential_names'] = []
+            
             # Preprocess contexts
             contexts = self._preprocess_contexts(contexts, query, query_intent)
             
@@ -70,31 +83,37 @@ class EnhancedCombinedReranker(Reranker):
             
             # Apply each reranker
             for reranker in self.rerankers:
-                contexts = reranker.rerank(query, contexts, query_intent, answer_components)
-                
-                # Store scores for analysis
-                reranker_name = reranker.__class__.__name__
-                score_key = None
-                
-                if reranker_name == 'CodeStructureReranker':
-                    score_key = 'structure_score'
-                elif reranker_name == 'SignatureReranker':
-                    score_key = 'signature_score'
-                elif reranker_name == 'SemanticReranker':
-                    score_key = 'semantic_score'
-                
-                if score_key:
-                    self.feature_impacts[score_key] = [ctx.get(score_key, 0) for ctx in contexts[:5]]
+                try:
+                    contexts = reranker.rerank(query, contexts, query_intent, answer_components)
                     
-                    # Store scores in context
-                    for ctx in contexts:
-                        if 'previous_scores' not in ctx:
-                            ctx['previous_scores'] = {}
-                        ctx['previous_scores'][score_key] = ctx.get(score_key, 0)
+                    # Store scores for analysis
+                    reranker_name = reranker.__class__.__name__
+                    score_key = None
+                    
+                    if reranker_name == 'CodeStructureReranker':
+                        score_key = 'structure_score'
+                    elif reranker_name == 'SignatureReranker':
+                        score_key = 'signature_score'
+                    elif reranker_name == 'SemanticReranker':
+                        score_key = 'semantic_score'
+                    
+                    if score_key:
+                        self.feature_impacts[score_key] = [ctx.get(score_key, 0) for ctx in contexts[:5]]
+                        
+                        # Store scores in context
+                        for ctx in contexts:
+                            if 'previous_scores' not in ctx:
+                                ctx['previous_scores'] = {}
+                            ctx['previous_scores'][score_key] = ctx.get(score_key, 0)
+                except Exception as e:
+                    print(f"Error in reranker {reranker_name}: {e}")
             
             # Boost main functions
-            relationship_analyzer = FunctionRelationshipAnalyzer(contexts)
-            contexts = relationship_analyzer.boost_main_functions(contexts)
+            try:
+                relationship_analyzer = FunctionRelationshipAnalyzer(contexts)
+                contexts = relationship_analyzer.boost_main_functions(contexts)
+            except Exception as e:
+                print(f"Error in FunctionRelationshipAnalyzer: {e}")
             
             # Normalize scores
             contexts = self._normalize_scores(contexts)
@@ -108,24 +127,35 @@ class EnhancedCombinedReranker(Reranker):
             
         except Exception as e:
             print(f"Error in enhanced combined reranker: {e}")
+            import traceback
+            traceback.print_exc()
             return contexts
     
     def _preprocess_contexts(self, contexts: List[Dict[str, Any]], query: str, query_intent: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Preprocess contexts to extract components and set initial scores."""
         for ctx in contexts:
-            # Extract components if needed
             if 'components' not in ctx:
-                ctx['components'] = self.component_extractor.extract_components(ctx.get('text', ''))
+                if 'enhanced_components' in ctx:
+                    ctx['components'] = ctx['enhanced_components']
+                else:
+                    ctx['components'] = self.component_extractor.extract_components(ctx.get('text', ''))
+            
+            # Ensure 'components' is always a dictionary
+            if not isinstance(ctx['components'], dict):
+                ctx['components'] = {}
             
             # Set initial scores
             if 'score' not in ctx:
                 ctx['score'] = 0.0
             ctx['final_score'] = ctx['score']
             
-            # Check for function name match
-            if query_intent.get('function_name'):
-                ctx_func_name = ctx['components'].get('function_name', '').lower()
-                query_func_name = query_intent['function_name'].lower()
+            # Check for function name match - with type safety
+            function_name = query_intent.get('function_name')
+            if function_name and isinstance(function_name, str):
+                ctx_func_name = ctx['components'].get('function_name', '')
+                if not isinstance(ctx_func_name, str):
+                    ctx_func_name = str(ctx_func_name) if ctx_func_name is not None else ''
+                ctx_func_name = ctx_func_name.lower()
+                query_func_name = function_name.lower()
                 
                 # Apply name match boost
                 if ctx_func_name == query_func_name:
@@ -134,13 +164,19 @@ class EnhancedCombinedReranker(Reranker):
                 elif query_func_name in ctx_func_name or ctx_func_name in query_func_name:
                     ctx['name_match_boost'] = 0.15
                     ctx['final_score'] += 0.15
-                elif query_intent.get('potential_names') and any(
-                    name.lower() in ctx_func_name or ctx_func_name in name.lower()
-                    for name in query_intent['potential_names']):
-                    ctx['name_match_boost'] = 0.1
-                    ctx['final_score'] += 0.1
+                elif query_intent.get('potential_names') and isinstance(query_intent.get('potential_names'), (list, tuple)):
+                    # Only iterate if potential_names is iterable (list or tuple)
+                    if any(
+                        isinstance(name, str) and (name.lower() in ctx_func_name or ctx_func_name in name.lower())
+                        for name in query_intent['potential_names']):
+                        ctx['name_match_boost'] = 0.1
+                        ctx['final_score'] += 0.1
+                    else:
+                        ctx['name_match_boost'] = 0.0
                 else:
                     ctx['name_match_boost'] = 0.0
+            else:
+                ctx['name_match_boost'] = 0.0
         
         return contexts
     
@@ -258,6 +294,10 @@ class EnhancedCombinedReranker(Reranker):
                 components = ctx.get('components', {})
                 function_calls = components.get('function_calls', [])
                 
+                # Handle both integer and list types for function_calls
+                if isinstance(function_calls, int):
+                    function_calls = []  # If it's just a count, we can't check for specific functions
+                
                 file_ops = ['open', 'read', 'write', 'close', 'makedirs', 'exists', 'isdir', 'isfile']
                 file_op_count = sum(1 for op in file_ops if op in function_calls)
                 
@@ -271,6 +311,10 @@ class EnhancedCombinedReranker(Reranker):
             for ctx in contexts:
                 components = ctx.get('components', {})
                 function_calls = components.get('function_calls', [])
+                
+                # Handle both integer and list types for function_calls
+                if isinstance(function_calls, int):
+                    function_calls = []  # If it's just a count, we can't check for specific functions
                 
                 string_ops = ['split', 'join', 'strip', 'replace', 'format', 'lower', 'upper', 'find', 'index']
                 string_op_count = sum(1 for op in string_ops if op in function_calls)

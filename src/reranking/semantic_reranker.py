@@ -1,13 +1,13 @@
 from typing import Dict, List, Any
 import re
-from reranking.reranker import Reranker
+# Removed import from reranking.reranker
 
-class SemanticReranker(Reranker):
+class SemanticReranker:
     """Reranker that uses semantic understanding to match queries with code snippets."""
     
     def __init__(self, weight: float = 1.6):
         """Initialize the semantic reranker with given weight."""
-        super().__init__()
+        # No longer calls super().__init__()
         self.weight = weight
         
     def compute_semantic_similarity(self, query: str, ctx_text: str, 

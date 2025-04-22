@@ -1,12 +1,12 @@
 from typing import Dict, List, Any
-from reranking.reranker import Reranker
+# Removed import from reranking.reranker
 
-class CodeStructureReranker(Reranker):
+class CodeStructureReranker:
     """Reranker that prioritizes code with similar structure to the expected answer."""
     
     def __init__(self, weight: float = 1.0):
         """Initialize with given weight."""
-        super().__init__()
+        # No longer calls super().__init__()
         self.weight = weight
     
     def compute_structure_similarity(self, ctx_components: Dict[str, Any], 
@@ -33,7 +33,7 @@ class CodeStructureReranker(Reranker):
             if max_value > 0:
                 similarity = 1.0 - abs(ctx_value - answer_value) / max_value
             else:
-                similarity = 1.0  # Both zero is a perfect match
+                similarity = 1.0 
             
             score += weight * similarity
         

@@ -8,12 +8,12 @@ with open(input_file, 'r') as f:
     data = json.load(f)
 
 reduced_data = []
-max_ctxs = 50
+# max_ctxs = 50
 for item in data[:100]:
     reduced_item = item.copy()
     
     if 'ctxs' in item and isinstance(item['ctxs'], list):
-        reduced_item['ctxs'] = item['ctxs'][:max_ctxs]
+        reduced_item['ctxs'] = item['ctxs'][:]
     
     reduced_data.append(reduced_item)
 
@@ -22,4 +22,4 @@ with open(output_file, 'w') as f:
     json.dump(reduced_data, f, indent=2)
 
 print(f"Original data had {len(data)} questions")
-print(f"Reduced data has {len(reduced_data)} questions, each with maximum {max_ctxs} contexts")
+print(f"Reduced data has {len(reduced_data)} questions")

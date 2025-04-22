@@ -14,7 +14,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src'
 
 from data.data_processor import DataProcessor
 from reranking.enhanced_combined_reranker import EnhancedCombinedReranker
-from refinement.self_refiner import SelfRefiner
 from evaluation.evaluator import Evaluator
 from query_intent_extractor import QueryIntentExtractor
 from ast_component_extractor import ASTComponentExtractor
@@ -32,9 +31,9 @@ logger = logging.getLogger('CodeEnhancementSystem')
 
 class EnhancedCodeEnhancementSystem:
     """
-    Enhanced class for improving code examples through reranking and refinement.
+    Enhanced class for improving code examples through reranking.
     """
-    def __init__(self, retrieved_data_path: str, use_reranking: bool = True, use_refinement: bool = True,
+    def __init__(self, retrieved_data_path: str, use_reranking: bool = True,
                  log_details: bool = False):
         """
         Initialize the enhanced code enhancement system.
@@ -42,7 +41,6 @@ class EnhancedCodeEnhancementSystem:
         Args:
             retrieved_data_path: Path to the JSON file containing retrieval results
             use_reranking: Whether to use the reranking component
-            use_refinement: Whether to use the refinement component
             log_details: Whether to log detailed information for analysis
         """
         logger.info(f"Initializing EnhancedCodeEnhancementSystem with {retrieved_data_path}")
@@ -66,12 +64,10 @@ class EnhancedCodeEnhancementSystem:
         
         # Initialize enhancement components
         self.reranker = EnhancedCombinedReranker() if use_reranking else None
-        self.refiner = SelfRefiner() if use_refinement else None
         self.evaluator = Evaluator()
         
         # Track component usage
         self.use_reranking = use_reranking
-        self.use_refinement = use_refinement
         
         logger.info("EnhancedCodeEnhancementSystem initialized successfully")
     
@@ -120,10 +116,10 @@ class EnhancedCodeEnhancementSystem:
         
         # Apply reranking if enabled
         reranked_contexts = []
-        if self.use_reranking:
+        if self.use_reranking and self.reranker:
             # Extract query intent and answer components
             query_intent = self.intent_extractor.extract_intent(query)
-            answer_components = self.intent_extractor.extract_answer_components(query_data.get('answer', ''))
+            answer_components = query_data.get('enhanced_answer_components', {})
             
             # Apply reranking
             reranked_contexts = self.reranker.rerank(query, contexts, query_intent, answer_components)
@@ -134,12 +130,6 @@ class EnhancedCodeEnhancementSystem:
         else:
             # If reranking is disabled, use the original contexts
             reranked_contexts = contexts
-        
-        # Apply refinement if enabled
-        if self.use_refinement and reranked_contexts:
-            # Refine the top result
-            refined_code = self.refiner.refine(query, reranked_contexts[0]['text'])
-            reranked_contexts[0]['text'] = refined_code
         
         # End timing
         end_time = time.time()
@@ -177,11 +167,7 @@ class EnhancedCodeEnhancementSystem:
         }
         
         # Add reranking statistics if available
-        if self.use_reranking:
-            # Debug: Print the keys in previous_scores
-            if reranked_contexts and 'previous_scores' in reranked_contexts[0]:
-                logger.info(f"Previous scores keys: {list(reranked_contexts[0]['previous_scores'].keys())}")
-            
+        if self.use_reranking and self.reranker:
             result["reranking_stats"] = {
                 "feature_impacts": {
                     "structure_score": reranked_contexts[0].get('previous_scores', {}).get('structure_score', 0) if reranked_contexts else 0,
@@ -191,11 +177,10 @@ class EnhancedCodeEnhancementSystem:
             }
         
         logger.info(f"Query {query_idx} processed in {processing_time:.2f} seconds")
-        logger.info(f"Evaluation: BLEU={evaluation.get('bleu', 0):.4f}, " +
-                   f"Edit distance={evaluation.get('edit_distance', 1):.4f}")
+        logger.info(f"Evaluation: BLEU={evaluation.get('bleu', 0):.4f}, " + f"Edit distance={evaluation.get('edit_distance', 1):.4f}")
         
         return result
-    
+
     def _log_reranking_details(self, query: str, query_intent: Dict[str, Any], 
                             contexts: List[Dict[str, Any]]) -> None:
         """
@@ -325,7 +310,7 @@ def main():
     parser.add_argument('--data', type=str, required=True, help='Path to retrieved results JSON file')
     parser.add_argument('--query_idx', type=int, help='Specific query index to enhance')
     parser.add_argument('--all', action='store_true', help='Process all queries')
-    parser.add_argument('--mode', type=str, choices=['reranking', 'refinement', 'both'], default='both',
+    parser.add_argument('--mode', type=str, choices=['reranking'], default='reranking',
                         help='Operation mode')
     parser.add_argument('--k', type=int, default=5, help='Number of results to keep')
     parser.add_argument('--output', type=str, default='output', help='Output directory')
@@ -340,8 +325,7 @@ def main():
     
     system = EnhancedCodeEnhancementSystem(
         args.data, 
-        use_reranking=args.mode in ['reranking', 'both'], 
-        use_refinement=args.mode in ['refinement', 'both'],
+        use_reranking=args.mode == 'reranking',
         log_details=args.debug
     )
     
