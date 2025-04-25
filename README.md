@@ -1,6 +1,10 @@
 # Biencoder Code Instances Retriever
+Reimplementation of SCODE-R and a pipeline to obtain the embeddings for given texts and to get the retrieved results. Make sure you run `run_candidate_embedding.sh` and then run `run_inference.sh`. But make sure you download all necessary checkpoints before run these scripts!
 
-
+## Main Components
+- SCODE-R/
+  - `run_candidate_embedding.sh`: the script to generate embeddings for the given database
+  - `run_inference.sh`: the script to generate the output retrieved results and save those as json files
 
 # Retrieved Code Instances Reranker
 A component for reranking and improving retrieved code instance results based on semantic analysis and code understanding.
