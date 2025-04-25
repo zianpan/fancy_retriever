@@ -1,37 +1,35 @@
+# Code Reranker
+A component for reranking and improving code search results based on semantic analysis and code understanding.
 
-# News
-- 🎉 Our new paper [CodeSim](https://github.com/kagnlp/CodeGenerator) got accepted in NAACL 2025 Findings.
-- 🎉 Our new paper [MapCoder](https://raw.githubusercontent.com/Md-Ashraful-Pramanik/MapCoder/) got accepted in [ACL 2024](https://2024.aclweb.org/).
-- All our codebase in both MapCoder and Redcoder are open-sourced with MIT and Modified MIT License.
-- See you at ACL, 2024, Bangkok, Thailand. 
+## Components
+- `main.py`: Main entry point for the reranking system
+- `function_relationship_analyzer.py`: Analyzes relationships between functions in code
+- `query_intent_extractor.py`: Extracts and processes search query intents
+- `ast_component_extractor.py`: Extracts code components using Abstract Syntax Tree analysis
+- `src/`:
+  - `data/`:
+    - `data_loader.py`: Handles loading and preprocessing of code search results and queries
+    - `data_processor.py`: Processes and transforms raw data into reranker-ready format
+  - `reranking/`:
+    - `enhanced_combined_reranker.py`: Main reranking orchestrator, combines scores from different reranking strategies
+    - `semantic_reranker.py`: Semantic similarity-based reranking
+    - `code_structure_reranker.py`: Structure-based reranking
+    - `signature_reranker.py`: Function signature analysis
+    - `execution_results_reranker.py`: Execution results analysis
+- `evaluation/`: Evaluation scripts and metrics
 
-# REDCODER (Retrieval augmentED CODe gEneration and summaRization)
+## Usage
 
-This is repository for the SCODE-R retriever in the [Retrieval Augmented Code Generation and Summarization](https://arxiv.org/abs/2108.11601) paper.
+To use the reranker:
 
-If you find this paper or this code useful, please cite this paper:
+1. Ensure all dependencies are installed
+2. Run the reranker using:
+```bash
+python main.py --data your_input_filename.json --all --mode reranking --output your_output_dir/
 ```
-@inproceedings{parvez2021retrieval,
-  title = {Retrieval Augmented Code Generation and Summarization},
-  author = {Parvez, Md Rizwan and Ahmad, Wasi Uddin and Chakraborty, Saikat and Ray, Baishakhi and Chang, Kai-Wei},
-  booktitle = {EMNLP-Findings},
-  year = {2021}
-}
-```
 
-Our model has two parts. You can use them seperately as well.
-- SCODE-R: Summary and Code Retriever. Please see instructions in ```./SCODE-R```.
-- SCODE-G: Summary and Code Generator. Please see instructions in ```./SCODE-G```.
-
-
-## All REDCODER data/models/outputs together:
-- Exclude retrieval candidate embeddings(too large)
-- Exclude tokenized input to SCODE-G (by sentencepiece, we provide code and docs in ```SCODE-G``` directory. Please use them instead.)
-- Please go through issues specially this [issue](https://github.com/rizwan09/REDCODER/issues/1)
-- Sample SCODE-R output: [code to text valid split top 30 k retrievals](https://drive.google.com/file/d/1ktOoJc0uRG7TqfYDI0OZlsLpMnRjEmLl/view?usp=sharing)
-- Finetuned SCODE-R checkpoints:
-  - Code2Text Python: [Link](https://drive.google.com/file/d/13-5wAHvNQwPifiODnpFYUFJpK-8NHtWt/view?usp=sharing)
-  - Text2Code Python: [Link](https://drive.google.com/file/d/1-YWPicpjynkC2sa8Mo02MhFiSvkV3ThJ/view?usp=sharing)
-  - Code2Text Java: [Link](https://drive.google.com/file/d/14nAonUhEKrE7Aufg6u2eNpchaiutNxIn/view?usp=sharing)
-  - Text2Code Java: [Link](https://drive.google.com/file/d/1pvolKC7o8iyGKLDCy37HXt4yH9lqTjpr/view?usp=sharing)
-- All the retrieval database: (a) one combined summary retrieval corpus for code2text for both python and Java (b) Java and Python code retrieval corpus for text2Code tasks: [LINK](https://drive.google.com/drive/folders/1njGXJuPsq5Eod9Ff5zAutRULk_G0TzQr?usp=sharing)
+The reranker will process code search results and improve their ranking based on:
+- Function relationships and dependencies
+- Query intent analysis
+- Code structure and components
+- Semantic relevance
