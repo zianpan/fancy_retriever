@@ -1,5 +1,9 @@
-# Code Reranker
-A component for reranking and improving code search results based on semantic analysis and code understanding.
+# Biencoder Code Instances Retriever
+
+
+
+# Retrieved Code Instances Reranker
+A component for reranking and improving retrieved code instance results based on semantic analysis and code understanding.
 
 ## Components
 - `main.py`: Main entry point for the reranking system
@@ -33,3 +37,14 @@ The reranker will process code search results and improve their ranking based on
 - Query intent analysis
 - Code structure and components
 - Semantic relevance
+
+
+# Dynamic Augmented Text2Code Generation
+A text to code generator module augmented with dynamic number of retrieved relevant code instances. Our results show text to code generation overall performance improves and becomes saturated while augmented with increasing amount of retrieved code instances. However, different text command achieves its highest performance at different saturation speed: while some at 0 or 5 code instances, others at 20 or 40 code instances. To achieve an overall highest performance with the least amount of compute, we designed a LLM router, using the Qwen2.5-14B-1M long context model, to determine the difficulty of a given problem by classifying it into easy, medium, or hard levels. This provides instruction for how many retrieved code instances that are necessary as input for code generation, using the same Qwen2.5-14B-1M model.
+
+## Components
+- `codegen/`: code generation brance, run below sequentially
+  - `Generation/`:
+    - `pipeline_augmented.ipynb`: LLM router and augmented code generator
+    - `evaluation_SCODE_G.ipynb`: EM, BLEU, CodeBLEU evaluation for code generation
+    - `evaluation_SCODE_R.ipynb`: EM, BLEU, CodeBLEU evaluation for code retriever
